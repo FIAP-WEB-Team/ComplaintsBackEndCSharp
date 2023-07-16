@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: complaints-deployment
+  namespace: complaintsblue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: complaintsapi
+  template:
+    metadata:
+      labels:
+        app: complaintsapi
+    spec:
+      containers:
+      - name: complaintpod
+        image: pedropinguelli/complaintsapi:v2
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: complaintsservice
+  namespace: complaintsblue
+spec:
+  selector:
+    app: complaintsapi
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer

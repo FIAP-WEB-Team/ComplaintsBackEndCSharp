@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    include:
+      - master
+
+jobs:
+- job: BuildAndDeploy
+  displayName: 'Build and Deploy'
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  - checkout: self
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Restore Packages'
+    inputs:
+      command: 'restore'
+      projects: '**/*.csproj'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Build Solution'
+    inputs:
+      command: 'build'
+      projects: '**/*.csproj'
+      arguments: '--configuration Release'
+
+  - task: Docker@2
+    displayName: 'Build and Push Docker Image'
+    inputs:
+      containerRegistry: 'your-container-registry-connection'
+      repository: 'your-container-registry/repository-name'
+      command: 'buildAndPush'
+      Dockerfile: '**/Dockerfile'
+      tags: |
+        $(Build.BuildId)
+        latest
+
+  - task: AzureCLI@2
+    displayName: 'Deploy to AKS'
+    inputs:
+      azureSubscription: 'your-azure-subscription'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az aks get-credentials --resource-group your-resource-group --name your-aks-cluster
+        kubectl apply -f $(System.DefaultWorkingDirectory)/kubernetes/your-manifest.yaml
